@@ -416,7 +416,15 @@ body::after{content:'';position:fixed;inset:0;
       <div><h2>Contexto del Trade</h2><p>Fecha, sesión y operador</p></div></div>
     <div class="frow c2">
       <div class="field"><label>Fecha</label><input type="date" id="f-fecha"></div>
-      <div class="field"><label>Hora ET</label><input type="time" id="f-hora"></div>
+      <div class="field"><label>Hora ET</label><input type="number" id="f-hora-h" min="6" max="12" placeholder="9" inputmode="numeric" style="width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:14px;padding:12px 14px;border-radius:var(--radius);outline:none;" oninput="buildHora()"></div>
+    </div>
+    <div class="field" style="margin-bottom:16px"><label>Minutos ET</label>
+      <div class="pills">
+        <div class="pill" onclick="pickMin(this,'00')">:00</div>
+        <div class="pill" onclick="pickMin(this,'15')">:15</div>
+        <div class="pill" onclick="pickMin(this,'30')">:30</div>
+        <div class="pill" onclick="pickMin(this,'45')">:45</div>
+      </div>
     </div>
     <div class="field" style="margin-bottom:16px"><label>Operador</label>
       <div class="pills">
@@ -804,7 +812,7 @@ const S = {
   operador:'',par:'',instrumento:'',timeframe:'',
   biasH4:'',confluencia:'',setup:'',variante:'',direccion:'',tipoEntrada:'',
   contEntrada:'',resultado:'',contParciales:'',contRestantes:'',
-  animo:0,confianza:0
+  animo:0,confianza:0,minutos:'',hora:''
 };
 
 // Init
@@ -859,6 +867,18 @@ function go(n) {
   document.getElementById('s'+cur).classList.add('active');
   buildProg();
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function pickMin(el, val) {
+  el.closest('.pills').querySelectorAll('.pill').forEach(p=>p.classList.remove('sel'));
+  el.classList.add('sel');
+  S.minutos = val;
+  buildHora();
+}
+function buildHora() {
+  const h = document.getElementById('f-hora-h').value || '';
+  const m = S.minutos || '';
+  S.hora = h && m ? `${h.padStart(2,'0')}:${m}` : '';
 }
 
 // ══ INPUTS ══
@@ -969,7 +989,7 @@ function save() {
   const t={
     id:Date.now(),
     fecha:document.getElementById('f-fecha').value,
-    hora:document.getElementById('f-hora').value,
+    hora:S.hora||'',
     operador:S.operador, par:S.par, instrumento:S.instrumento, timeframe:S.timeframe,
     biasH4:S.biasH4, confluencia:S.confluencia, setup:S.setup, variante:S.variante,
     direccion:dir, tipoEntrada:S.tipoEntrada,
@@ -1019,6 +1039,7 @@ function resetForm(){
   document.querySelectorAll('.r-btn').forEach(b=>b.classList.remove('sel'));
   document.querySelectorAll('input,textarea').forEach(i=>{if(i.type!=='date')i.value='';});
   document.getElementById('f-fecha').valueAsDate=new Date();
+  S.minutos=''; S.hora='';
   document.getElementById('parcSec').style.display='none';
   document.getElementById('beNote').style.display='none';
   removePhoto();
