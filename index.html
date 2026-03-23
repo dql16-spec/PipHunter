@@ -548,6 +548,7 @@ body::after{content:'';position:fixed;inset:0;
       <div class="pills">
         <div class="pill" onclick="pickRes(this,'TP')">✅ TP completo</div>
         <div class="pill" onclick="pickRes(this,'SL')">❌ SL completo</div>
+        <div class="pill" onclick="pickRes(this,'BE')">🔄 BE solo</div>
         <div class="pill" onclick="pickRes(this,'PARC_BE')">⚡ Parciales + BE</div>
         <div class="pill" onclick="pickRes(this,'PARC_TP')">🎯 Parciales + TP</div>
       </div></div>
@@ -885,6 +886,12 @@ function rate(el, key, val) {
   S[key]=val;
 }
 
+// ══ INSTRUMENT MULTIPLIERS ══
+const TICK_VALUE = {GC:10, MGC:1, NQ:20, MNQ:2};
+function getMultiplier() {
+  return TICK_VALUE[S.instrumento] || 1;
+}
+
 // ══ CALC ══
 function liveCalc() {
   const e=parseFloat(document.getElementById('f-e').value);
@@ -892,20 +899,25 @@ function liveCalc() {
   const tp=parseFloat(document.getElementById('f-tp').value);
   const sa=parseFloat(document.getElementById('f-sa').value);
   const dir=S.direccion;
-  const slp=(!isNaN(e)&&!isNaN(sl))?Math.abs(e-sl)*10:null;
-  const tpp=(!isNaN(e)&&!isNaN(tp))?Math.abs(tp-e)*10:null;
+  const mult=getMultiplier();
+  const cont=+S.contEntrada||1;
+  const slp=(!isNaN(e)&&!isNaN(sl))?Math.abs(e-sl):null;
+  const tpp=(!isNaN(e)&&!isNaN(tp))?Math.abs(tp-e):null;
   const rr=(slp&&tpp&&slp>0)?tpp/slp:null;
   let res=null;
-  if(!isNaN(e)&&!isNaN(sa)) res=dir==='L'?(sa-e)*10:dir==='S'?(e-sa)*10:null;
+  if(!isNaN(e)&&!isNaN(sa)) res=dir==='L'?(sa-e):dir==='S'?(e-sa):null;
   const set=(id,v,cls='dim')=>{
     const el=document.getElementById(id);
     el.textContent=v!==null?(typeof v==='number'?v.toFixed(1):v):'—';
     el.className='c-val '+(v===null?'dim':cls);
   };
-  set('cv-sl',slp); set('cv-tp',tpp); set('cv-rr',rr);
+  set('cv-sl',slp?`${slp.toFixed(1)} pts`:null);
+  set('cv-tp',tpp?`${tpp.toFixed(1)} pts`:null);
+  set('cv-rr',rr);
   if(res!==null){
-    set('cv-res',res,res>=0?'pos':'neg');
-    set('cv-out',res>=0?'WIN':'LOSS',res>=0?'pos':'neg');
+    const usd=res*mult*cont;
+    set('cv-res',`${res>=0?'+':''}${res.toFixed(1)} pts`,res>=0?'pos':'neg');
+    set('cv-out',`${res>=0?'WIN':'LOSS'} · $${usd>=0?'+':''}${usd.toFixed(0)}`,res>=0?'pos':'neg');
     const rg=slp&&slp>0?res/slp:null;
     set('cv-r',rg,rg>=0?'pos':'neg');
   }
@@ -946,10 +958,13 @@ function save() {
   const tp=parseFloat(document.getElementById('f-tp').value)||0;
   const sa=parseFloat(document.getElementById('f-sa').value)||0;
   const dir=S.direccion;
-  const slPips=+(Math.abs(e-sl)*10).toFixed(1);
-  const tpPips=+(Math.abs(tp-e)*10).toFixed(1);
+  const mult=getMultiplier();
+  const cont=+S.contEntrada||1;
+  const slPips=+(Math.abs(e-sl)).toFixed(1);
+  const tpPips=+(Math.abs(tp-e)).toFixed(1);
   const rr=slPips>0?+(tpPips/slPips).toFixed(2):0;
-  const result=+(dir==='L'?(sa-e)*10:(e-sa)*10).toFixed(1);
+  const result=+(dir==='L'?(sa-e):(e-sa)).toFixed(1);
+  const resultUSD=+(result*mult*cont).toFixed(0);
   const rGanado=slPips>0?+(result/slPips).toFixed(2):0;
   const t={
     id:Date.now(),
@@ -958,9 +973,9 @@ function save() {
     operador:S.operador, par:S.par, instrumento:S.instrumento, timeframe:S.timeframe,
     biasH4:S.biasH4, confluencia:S.confluencia, setup:S.setup, variante:S.variante,
     direccion:dir, tipoEntrada:S.tipoEntrada,
-    entrada:e, sl, tp, salida:sa, slPips, tpPips, rr, result,
+    entrada:e, sl, tp, salida:sa, slPips, tpPips, rr, result, resultUSD,
     outcome:result>=0?'WIN':'LOSS', rGanado,
-    resultado:S.resultado, contEntrada:+S.contEntrada||0,
+    resultado:S.resultado, contEntrada:cont,
     contParciales:+S.contParciales||0,
     pipsParciales:parseFloat(document.getElementById('f-pp').value)||0,
     contRestantes:+S.contRestantes||0,
@@ -972,14 +987,14 @@ function save() {
   trades.push(t);
   const key = activeProfile ? PROFILES[activeProfile].key : 'ph_v2';
   localStorage.setItem(key, JSON.stringify(trades));
-  const resLabel={TP:'TP Completo',SL:'SL Completo',PARC_BE:'Parciales + BE',PARC_TP:'Parciales + TP'};
+  const resLabel={TP:'TP Completo',SL:'SL Completo',BE:'BE Solo',PARC_BE:'Parciales + BE',PARC_TP:'Parciales + TP'};
   document.getElementById('sumCard').innerHTML=`
     <div class="summary-title">RESUMEN DEL TRADE</div>
     ${row('Fecha / Hora',`${t.fecha} · ${t.hora}`,'')}
     ${row('Instrumento',`${t.par} · ${t.instrumento}`,'gold')}
     ${row('Setup',`${t.setup}${t.variante?' — '+t.variante:''}`,'gold')}
     ${row('Dirección',dir==='L'?'⬆ LONG':'⬇ SHORT',dir==='L'?'green':'red')}
-    ${row('Resultado',`${result>=0?'+':''}${result} pips`,result>=0?'green':'red')}
+    ${row('Resultado',`${result>=0?'+':''}${result} pts · $${resultUSD>=0?'+':''}${resultUSD}`,result>=0?'green':'red')}
     ${row('R:R',rr,'gold')}
     ${row('Tipo cierre',resLabel[S.resultado]||'—','blue')}
     ${row('Ánimo / Confianza',`${S.animo} / ${S.confianza}`,'')}
@@ -1045,15 +1060,15 @@ function renderTable(){
     tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:40px;font-family:'Space Mono',monospace;font-size:11px">Sin trades aún</td></tr>`;
     return;
   }
-  const rLabel={TP:'TP',SL:'SL',PARC_BE:'P+BE',PARC_TP:'P+TP'};
-  const rCls={TP:'tag-win',SL:'tag-loss',PARC_BE:'tag-be',PARC_TP:'tag-win'};
+  const rLabel={TP:'TP',SL:'SL',BE:'BE',PARC_BE:'P+BE',PARC_TP:'P+TP'};
+  const rCls={TP:'tag-win',SL:'tag-loss',BE:'tag-be',PARC_BE:'tag-be',PARC_TP:'tag-win'};
   tbody.innerHTML=[...trades].reverse().map(t=>`<tr>
     <td style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted2)">${t.fecha}</td>
     <td style="color:var(--gold);font-weight:700">${t.instrumento||'—'}</td>
     <td style="font-size:11px">${t.setup||'—'}</td>
     <td style="color:${t.direccion==='L'?'var(--green)':'var(--red)'}">${t.direccion==='L'?'⬆':'⬇'}</td>
     <td><span class="tag ${t.outcome==='WIN'?'tag-win':'tag-loss'}">${t.outcome}</span></td>
-    <td style="color:${t.result>=0?'var(--green)':'var(--red)'};font-family:'Space Mono',monospace">${t.result>=0?'+':''}${t.result}</td>
+    <td style="color:${t.result>=0?'var(--green)':'var(--red)'};font-family:'Space Mono',monospace;font-size:10px">${t.result>=0?'+':''}${t.result} pts<br><span style="font-size:9px;opacity:0.7">$${t.resultUSD>=0?'+':''}${t.resultUSD||0}</span></td>
     <td style="color:var(--gold);font-family:'Space Mono',monospace">${t.rr}</td>
     <td><span class="tag ${rCls[t.resultado]||'tag-win'}">${rLabel[t.resultado]||'—'}</span></td>
     <td>${t.foto?`<img class="trade-thumb" src="${t.foto}" onclick="openPhotoModal('${t.foto}')" alt="chart">`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
@@ -1074,7 +1089,7 @@ function renderDash(){
   const totalPips=trades.reduce((a,t)=>a+t.result,0).toFixed(1);
   const avgRR=(trades.reduce((a,t)=>a+t.rr,0)/trades.length).toFixed(2);
   const avgPips=(trades.reduce((a,t)=>a+t.result,0)/trades.length).toFixed(1);
-  const withBE=trades.filter(t=>t.resultado==='PARC_BE');
+  const withBE=trades.filter(t=>t.resultado==='PARC_BE'||t.resultado==='BE');
   const withParc=trades.filter(t=>t.resultado==='PARC_BE'||t.resultado==='PARC_TP');
 
   let html=`<div class="kpi-row">
