@@ -324,6 +324,27 @@ body::after{content:'';position:fixed;inset:0;
 .prof-name{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--text);}
 .prof-count{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;}
 
+/* Wheel Picker */
+.wheel-picker{
+  display:flex;align-items:center;gap:2px;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  height:150px;overflow:hidden;position:relative;user-select:none;-webkit-user-select:none;}
+.wheel-sep{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold);
+  padding:0 4px;position:relative;z-index:2;}
+.wheel-col{flex:1;height:100%;overflow:hidden;position:relative;cursor:grab;}
+.wheel-col:active{cursor:grabbing;}
+.wheel-track{display:flex;flex-direction:column;transition:transform 0.15s cubic-bezier(0.2,0,0,1);}
+.wheel-item{height:50px;display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--muted);
+  transition:color 0.2s,font-size 0.2s;flex-shrink:0;}
+.wheel-item.selected{color:var(--gold);font-size:30px;}
+.wheel-selector{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  height:50px;border-top:1px solid rgba(255,215,0,0.3);border-bottom:1px solid rgba(255,215,0,0.3);
+  pointer-events:none;z-index:3;}
+.wheel-overlay{position:absolute;left:0;right:0;height:50px;pointer-events:none;z-index:2;}
+.wheel-overlay.top{top:0;background:linear-gradient(to bottom,var(--card),transparent);}
+.wheel-overlay.bot{bottom:0;background:linear-gradient(to top,var(--card),transparent);}
+
 /* User badge in nav */
 .nav-user{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;
   color:var(--gold);background:var(--gold-dim);border:1px solid rgba(255,215,0,0.2);
@@ -416,14 +437,46 @@ body::after{content:'';position:fixed;inset:0;
       <div><h2>Contexto del Trade</h2><p>Fecha, sesión y operador</p></div></div>
     <div class="frow c2">
       <div class="field"><label>Fecha</label><input type="date" id="f-fecha"></div>
-      <div class="field"><label>Hora ET</label><input type="number" id="f-hora-h" min="6" max="12" placeholder="9" inputmode="numeric" style="width:100%;background:var(--card);border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:14px;padding:12px 14px;border-radius:var(--radius);outline:none;" oninput="buildHora()"></div>
-    </div>
-    <div class="field" style="margin-bottom:16px"><label>Minutos ET</label>
-      <div class="pills">
-        <div class="pill" onclick="pickMin(this,'00')">:00</div>
-        <div class="pill" onclick="pickMin(this,'15')">:15</div>
-        <div class="pill" onclick="pickMin(this,'30')">:30</div>
-        <div class="pill" onclick="pickMin(this,'45')">:45</div>
+      <div class="field"><label>Hora ET</label>
+        <div class="wheel-picker" id="wheelPicker">
+          <div class="wheel-col" id="wheelHour">
+            <div class="wheel-track">
+              <div class="wheel-item" data-val="1">1</div>
+              <div class="wheel-item" data-val="2">2</div>
+              <div class="wheel-item" data-val="3">3</div>
+              <div class="wheel-item" data-val="4">4</div>
+              <div class="wheel-item" data-val="5">5</div>
+              <div class="wheel-item" data-val="6">6</div>
+              <div class="wheel-item" data-val="7">7</div>
+              <div class="wheel-item" data-val="8">8</div>
+              <div class="wheel-item" data-val="9">9</div>
+              <div class="wheel-item" data-val="10">10</div>
+              <div class="wheel-item" data-val="11">11</div>
+              <div class="wheel-item" data-val="12">12</div>
+            </div>
+          </div>
+          <div class="wheel-sep">:</div>
+          <div class="wheel-col" id="wheelMin">
+            <div class="wheel-track">
+              <div class="wheel-item" data-val="00">00</div>
+              <div class="wheel-item" data-val="15">15</div>
+              <div class="wheel-item" data-val="30">30</div>
+              <div class="wheel-item" data-val="45">45</div>
+            </div>
+          </div>
+          <div class="wheel-col" id="wheelAmPm" style="flex:0.8;cursor:pointer;" onclick="toggleAmPm()">
+            <div class="wheel-track">
+              <div class="wheel-item selected" id="ampmDisplay" data-val="AM" style="color:var(--gold);font-size:26px;height:150px;flex-direction:column;gap:8px">
+                <span id="amVal" style="opacity:1">AM</span>
+                <span id="pmVal" style="opacity:0.25;font-size:18px">PM</span>
+              </div>
+            </div>
+          </div>
+          <div class="wheel-overlay top"></div>
+          <div class="wheel-selector"></div>
+          <div class="wheel-overlay bot"></div>
+        </div>
+        <input type="hidden" id="f-hora">
       </div>
     </div>
     <div class="field" style="margin-bottom:16px"><label>Operador</label>
@@ -869,17 +922,87 @@ function go(n) {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function pickMin(el, val) {
-  el.closest('.pills').querySelectorAll('.pill').forEach(p=>p.classList.remove('sel'));
-  el.classList.add('sel');
-  S.minutos = val;
-  buildHora();
+// ══ WHEEL PICKER ══
+function initWheel(colId, defaultIdx) {
+  const col = document.getElementById(colId);
+  const track = col.querySelector('.wheel-track');
+  const items = track.querySelectorAll('.wheel-item');
+  const itemH = 50;
+  let current = defaultIdx || 0;
+  let startY, startOffset, isDragging = false;
+
+  function setIndex(idx) {
+    current = Math.max(0, Math.min(items.length - 1, idx));
+    track.style.transform = `translateY(${50 - current * itemH}px)`;
+    items.forEach((el, i) => el.classList.toggle('selected', i === current));
+    updateHoraField();
+  }
+
+  col.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    startOffset = current;
+    isDragging = true;
+  }, {passive:true});
+
+  col.addEventListener('touchmove', e => {
+    if(!isDragging) return;
+    const dy = startY - e.touches[0].clientY;
+    const moved = Math.round(dy / itemH);
+    setIndex(startOffset + moved);
+  }, {passive:true});
+
+  col.addEventListener('touchend', () => { isDragging = false; });
+
+  col.addEventListener('mousedown', e => {
+    startY = e.clientY; startOffset = current; isDragging = true;
+  });
+  document.addEventListener('mousemove', e => {
+    if(!isDragging) return;
+    const dy = startY - e.clientY;
+    const moved = Math.round(dy / itemH);
+    setIndex(startOffset + moved);
+  });
+  document.addEventListener('mouseup', () => { isDragging = false; });
+
+  col.addEventListener('wheel', e => {
+    e.preventDefault();
+    setIndex(current + (e.deltaY > 0 ? 1 : -1));
+  }, {passive:false});
+
+  // Click/tap to go to next item (useful for AM/PM)
+  col.addEventListener('click', () => {
+    setIndex(current + 1 < items.length ? current + 1 : 0);
+  });
+
+  setIndex(current);
+  return () => items[current].dataset.val;
 }
-function buildHora() {
-  const h = document.getElementById('f-hora-h').value || '';
-  const m = S.minutos || '';
-  S.hora = h && m ? `${h.padStart(2,'0')}:${m}` : '';
+
+let getHourVal, getMinVal, getAmPmVal;
+
+let currentAmPm = 'AM';
+function toggleAmPm() {
+  currentAmPm = currentAmPm === 'AM' ? 'PM' : 'AM';
+  document.getElementById('amVal').style.opacity = currentAmPm === 'AM' ? '1' : '0.25';
+  document.getElementById('pmVal').style.opacity = currentAmPm === 'PM' ? '1' : '0.25';
+  document.getElementById('amVal').style.fontSize = currentAmPm === 'AM' ? '26px' : '18px';
+  document.getElementById('pmVal').style.fontSize = currentAmPm === 'PM' ? '26px' : '18px';
+  updateHoraField();
 }
+
+function updateHoraField() {
+  if(!getHourVal) return;
+  const h = getHourVal();
+  const m = getMinVal();
+  document.getElementById('f-hora').value = `${h}:${m} ${currentAmPm}`;
+}
+
+// Init wheels after DOM ready
+setTimeout(() => {
+  getHourVal = initWheel('wheelHour', 8); // default 9
+  getMinVal  = initWheel('wheelMin', 0);  // default 00
+  updateHoraField();
+}, 100);
 
 // ══ INPUTS ══
 function pick(el, key) {
@@ -989,7 +1112,7 @@ function save() {
   const t={
     id:Date.now(),
     fecha:document.getElementById('f-fecha').value,
-    hora:S.hora||'',
+    hora:document.getElementById('f-hora').value,
     operador:S.operador, par:S.par, instrumento:S.instrumento, timeframe:S.timeframe,
     biasH4:S.biasH4, confluencia:S.confluencia, setup:S.setup, variante:S.variante,
     direccion:dir, tipoEntrada:S.tipoEntrada,
