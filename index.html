@@ -454,8 +454,6 @@ body::after{content:'';position:fixed;inset:0;
         <div class="wheel-picker" id="wheelPicker">
           <div class="wheel-col" id="wheelHour">
             <div class="wheel-track">
-              <div class="wheel-item" data-val="">　</div>
-              <div class="wheel-item" data-val="">　</div>
               <div class="wheel-item" data-val="1">1</div>
               <div class="wheel-item" data-val="2">2</div>
               <div class="wheel-item" data-val="3">3</div>
@@ -468,8 +466,6 @@ body::after{content:'';position:fixed;inset:0;
               <div class="wheel-item" data-val="10">10</div>
               <div class="wheel-item" data-val="11">11</div>
               <div class="wheel-item" data-val="12">12</div>
-              <div class="wheel-item" data-val="">　</div>
-              <div class="wheel-item" data-val="">　</div>
             </div>
             <div class="wheel-overlay-top"></div>
             <div class="wheel-selector"></div>
@@ -478,14 +474,10 @@ body::after{content:'';position:fixed;inset:0;
           <div class="wheel-sep">:</div>
           <div class="wheel-col" id="wheelMin">
             <div class="wheel-track">
-              <div class="wheel-item" data-val="">　</div>
-              <div class="wheel-item" data-val="">　</div>
               <div class="wheel-item" data-val="00">00</div>
               <div class="wheel-item" data-val="15">15</div>
               <div class="wheel-item" data-val="30">30</div>
               <div class="wheel-item" data-val="45">45</div>
-              <div class="wheel-item" data-val="">　</div>
-              <div class="wheel-item" data-val="">　</div>
             </div>
             <div class="wheel-overlay-top"></div>
             <div class="wheel-selector"></div>
@@ -869,8 +861,8 @@ function selectProfile(pid) {
   // Init wheel picker after profile selected
   if(!getHourVal) {
     setTimeout(() => {
-      getHourVal = initWheel('wheelHour', 10);
-      getMinVal  = initWheel('wheelMin', 2);
+      getHourVal = initWheel('wheelHour', 8); // default 9
+      getMinVal  = initWheel('wheelMin', 0);  // default 00
       updateHoraField();
     }, 100);
   }
@@ -953,24 +945,32 @@ function go(n) {
 function initWheel(colId, defaultIdx) {
   const col = document.getElementById(colId);
   const track = col.querySelector('.wheel-track');
-  const items = track.querySelectorAll('.wheel-item');
+  const items = Array.from(track.querySelectorAll('.wheel-item'));
   const itemH = 40;
+  const colH = 120;
+  const pad = 40; // exactly 1 item height, so first/last can center
   let current = defaultIdx || 0;
   let startY, startOffset, isDragging = false;
 
-  function setIndex(idx) {
+  track.style.paddingTop = pad + 'px';
+  track.style.paddingBottom = pad + 'px';
+
+  function setIndex(idx, animate) {
     current = Math.max(0, Math.min(items.length - 1, idx));
-    track.style.transform = `translateY(${40 - current * itemH}px)`;
+    track.style.transition = animate ? 'transform 0.2s ease' : 'none';
+    // pad offsets the track down by 1 item, so we subtract that
+    track.style.transform = `translateY(${-(current * itemH)}px)`;
     items.forEach((el, i) => {
-      const diff = Math.abs(i - current);
+      const d = Math.abs(i - current);
       el.classList.remove('selected','near','far');
-      if(diff === 0) el.classList.add('selected');
-      else if(diff === 1) el.classList.add('near');
+      if(d === 0) el.classList.add('selected');
+      else if(d === 1) el.classList.add('near');
       else el.classList.add('far');
     });
     updateHoraField();
   }
 
+  // Touch
   col.addEventListener('touchstart', e => {
     startY = e.touches[0].clientY;
     startOffset = current;
@@ -979,30 +979,39 @@ function initWheel(colId, defaultIdx) {
 
   col.addEventListener('touchmove', e => {
     if(!isDragging) return;
-    const dy = startY - e.touches[0].clientY;
-    const moved = Math.round(dy / itemH);
-    setIndex(startOffset + moved);
+    const moved = Math.round((startY - e.touches[0].clientY) / itemH);
+    setIndex(startOffset + moved, false);
   }, {passive:true});
 
-  col.addEventListener('touchend', () => { isDragging = false; });
+  col.addEventListener('touchend', e => {
+    isDragging = false;
+    const moved = Math.round((startY - e.changedTouches[0].clientY) / itemH);
+    setIndex(startOffset + moved, true);
+  }, {passive:true});
 
+  // Mouse
   col.addEventListener('mousedown', e => {
     startY = e.clientY; startOffset = current; isDragging = true;
   });
   document.addEventListener('mousemove', e => {
     if(!isDragging) return;
-    const dy = startY - e.clientY;
-    const moved = Math.round(dy / itemH);
-    setIndex(startOffset + moved);
+    const moved = Math.round((startY - e.clientY) / itemH);
+    setIndex(startOffset + moved, false);
   });
-  document.addEventListener('mouseup', () => { isDragging = false; });
+  document.addEventListener('mouseup', e => {
+    if(!isDragging) return;
+    isDragging = false;
+    const moved = Math.round((startY - e.clientY) / itemH);
+    setIndex(startOffset + moved, true);
+  });
 
+  // Scroll wheel
   col.addEventListener('wheel', e => {
     e.preventDefault();
-    setIndex(current + (e.deltaY > 0 ? 1 : -1));
+    setIndex(current + (e.deltaY > 0 ? 1 : -1), true);
   }, {passive:false});
 
-  setIndex(current);
+  setIndex(current, false);
   return () => items[current].dataset.val;
 }
 
