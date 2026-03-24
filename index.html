@@ -324,22 +324,39 @@ body::after{content:'';position:fixed;inset:0;
 .prof-name{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--text);}
 .prof-count{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;}
 
-/* Wheel Picker */
+/* Wheel Picker - iPhone style */
 .wheel-picker{
-  display:flex;align-items:center;gap:2px;
+  display:flex;align-items:center;gap:0;
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-  height:48px;overflow:hidden;position:relative;user-select:none;-webkit-user-select:none;}
-.wheel-sep{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);
-  padding:0 2px;position:relative;z-index:2;}
-.wheel-col{flex:1;height:100%;overflow:hidden;position:relative;cursor:grab;}
+  height:120px;overflow:hidden;position:relative;user-select:none;-webkit-user-select:none;}
+.wheel-sep{font-family:'Space Mono',monospace;font-size:20px;color:var(--gold);
+  padding:0 4px;position:relative;z-index:4;margin-top:0;}
+.wheel-col{flex:1;height:120px;overflow:hidden;position:relative;cursor:grab;}
 .wheel-col:active{cursor:grabbing;}
-.wheel-track{display:flex;flex-direction:column;transition:transform 0.15s cubic-bezier(0.2,0,0,1);}
-.wheel-item{height:48px;display:flex;align-items:center;justify-content:center;
-  font-family:'Space Mono',monospace;font-size:14px;color:var(--muted);
-  transition:color 0.2s,font-size 0.2s;flex-shrink:0;}
-.wheel-item.selected{color:var(--gold);font-size:16px;font-weight:700;}
-.wheel-selector{display:none;}
-.wheel-overlay{display:none;}
+.wheel-track{display:flex;flex-direction:column;transition:transform 0.2s cubic-bezier(0.2,0,0,1);will-change:transform;}
+.wheel-item{height:40px;display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;font-size:15px;color:var(--muted2);
+  flex-shrink:0;transition:all 0.15s;}
+.wheel-item.selected{color:var(--gold);font-size:18px;font-weight:700;}
+.wheel-item.near{color:var(--text);font-size:14px;opacity:0.6;}
+.wheel-item.far{opacity:0.2;font-size:12px;}
+.wheel-selector{position:absolute;left:0;right:0;top:40px;
+  height:40px;border-top:1px solid rgba(255,215,0,0.4);border-bottom:1px solid rgba(255,215,0,0.4);
+  pointer-events:none;z-index:3;background:rgba(255,215,0,0.04);}
+.wheel-overlay-top{position:absolute;left:0;right:0;top:0;height:50px;
+  background:linear-gradient(to bottom,var(--card) 10%,transparent);
+  pointer-events:none;z-index:2;}
+.wheel-overlay-bot{position:absolute;left:0;right:0;bottom:0;height:50px;
+  background:linear-gradient(to top,var(--card) 10%,transparent);
+  pointer-events:none;z-index:2;}
+/* AM/PM col */
+.wheel-ampm{flex:0.7;height:120px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;cursor:pointer;
+  border-left:1px solid var(--border);}
+.wheel-ampm span{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;
+  padding:8px 10px;border-radius:4px;transition:all 0.2s;}
+.wheel-ampm span.active{color:var(--gold);background:var(--gold-dim);border:1px solid rgba(255,215,0,0.2);}
+.wheel-ampm span.inactive{color:var(--muted);opacity:0.4;border:1px solid transparent;}
 
 /* User badge in nav */
 .nav-user{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;
@@ -431,12 +448,14 @@ body::after{content:'';position:fixed;inset:0;
   <div class="step active" id="s1">
     <div class="step-hdr"><div class="step-n">01</div>
       <div><h2>Contexto del Trade</h2><p>Fecha, sesión y operador</p></div></div>
-    <div class="frow c2">
+    <div class="frow c2" style="margin-bottom:0;align-items:flex-start">
       <div class="field"><label>Fecha</label><input type="date" id="f-fecha"></div>
       <div class="field"><label>Hora ET</label>
         <div class="wheel-picker" id="wheelPicker">
           <div class="wheel-col" id="wheelHour">
             <div class="wheel-track">
+              <div class="wheel-item" data-val="">　</div>
+              <div class="wheel-item" data-val="">　</div>
               <div class="wheel-item" data-val="1">1</div>
               <div class="wheel-item" data-val="2">2</div>
               <div class="wheel-item" data-val="3">3</div>
@@ -449,38 +468,43 @@ body::after{content:'';position:fixed;inset:0;
               <div class="wheel-item" data-val="10">10</div>
               <div class="wheel-item" data-val="11">11</div>
               <div class="wheel-item" data-val="12">12</div>
+              <div class="wheel-item" data-val="">　</div>
+              <div class="wheel-item" data-val="">　</div>
             </div>
+            <div class="wheel-overlay-top"></div>
+            <div class="wheel-selector"></div>
+            <div class="wheel-overlay-bot"></div>
           </div>
           <div class="wheel-sep">:</div>
           <div class="wheel-col" id="wheelMin">
             <div class="wheel-track">
+              <div class="wheel-item" data-val="">　</div>
+              <div class="wheel-item" data-val="">　</div>
               <div class="wheel-item" data-val="00">00</div>
               <div class="wheel-item" data-val="15">15</div>
               <div class="wheel-item" data-val="30">30</div>
               <div class="wheel-item" data-val="45">45</div>
+              <div class="wheel-item" data-val="">　</div>
+              <div class="wheel-item" data-val="">　</div>
             </div>
+            <div class="wheel-overlay-top"></div>
+            <div class="wheel-selector"></div>
+            <div class="wheel-overlay-bot"></div>
           </div>
-          <div class="wheel-col" id="wheelAmPm" style="flex:0.8;cursor:pointer;" onclick="toggleAmPm()">
-            <div class="wheel-track">
-              <div class="wheel-item selected" id="ampmDisplay" data-val="AM" style="height:48px;flex-direction:column;gap:2px">
-                <span id="amVal" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--gold);opacity:1">AM</span>
-                <span id="pmVal" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);opacity:0.4">PM</span>
-              </div>
-            </div>
+          <div class="wheel-ampm" onclick="toggleAmPm()">
+            <span id="amVal" class="active">AM</span>
+            <span id="pmVal" class="inactive">PM</span>
           </div>
-          <div class="wheel-overlay top"></div>
-          <div class="wheel-selector"></div>
-          <div class="wheel-overlay bot"></div>
         </div>
         <input type="hidden" id="f-hora">
       </div>
     </div>
-    <div class="field" style="margin-bottom:16px"><label>Operador</label>
+    <div class="field" style="margin-bottom:12px;margin-top:4px"><label>Operador</label>
       <div class="pills">
         <div class="pill" onclick="pick(this,'operador')">Yo</div>
         <div class="pill" onclick="pick(this,'operador')">Nick</div>
       </div></div>
-    <div class="div"></div>
+    <div class="div" style="margin:4px 0"></div>
     <div class="field" style="margin-bottom:16px"><label>Par</label>
       <div class="pills">
         <div class="pill" onclick="pick(this,'par')">Oro</div>
@@ -841,8 +865,15 @@ function selectProfile(pid) {
   trades = getProfileTrades(pid);
   document.getElementById('profileScreen').style.display = 'none';
   document.getElementById('navUser').textContent = PROFILES[pid].emoji + ' ' + PROFILES[pid].name.toUpperCase();
-  // Reset operador pill to match profile name
   window.scrollTo({top:0,behavior:'smooth'});
+  // Init wheel picker after profile selected
+  if(!getHourVal) {
+    setTimeout(() => {
+      getHourVal = initWheel('wheelHour', 10);
+      getMinVal  = initWheel('wheelMin', 2);
+      updateHoraField();
+    }, 100);
+  }
 }
 
 function switchProfile() {
@@ -923,14 +954,20 @@ function initWheel(colId, defaultIdx) {
   const col = document.getElementById(colId);
   const track = col.querySelector('.wheel-track');
   const items = track.querySelectorAll('.wheel-item');
-  const itemH = 48;
+  const itemH = 40;
   let current = defaultIdx || 0;
   let startY, startOffset, isDragging = false;
 
   function setIndex(idx) {
     current = Math.max(0, Math.min(items.length - 1, idx));
-    track.style.transform = `translateY(${0 - current * itemH}px)`;
-    items.forEach((el, i) => el.classList.toggle('selected', i === current));
+    track.style.transform = `translateY(${40 - current * itemH}px)`;
+    items.forEach((el, i) => {
+      const diff = Math.abs(i - current);
+      el.classList.remove('selected','near','far');
+      if(diff === 0) el.classList.add('selected');
+      else if(diff === 1) el.classList.add('near');
+      else el.classList.add('far');
+    });
     updateHoraField();
   }
 
@@ -965,17 +1002,11 @@ function initWheel(colId, defaultIdx) {
     setIndex(current + (e.deltaY > 0 ? 1 : -1));
   }, {passive:false});
 
-  // Click/tap to go to next item (useful for AM/PM)
-  col.addEventListener('click', () => {
-    setIndex(current + 1 < items.length ? current + 1 : 0);
-  });
-
   setIndex(current);
   return () => items[current].dataset.val;
 }
 
-let getHourVal, getMinVal, getAmPmVal;
-
+let getHourVal, getMinVal;
 let currentAmPm = 'AM';
 function toggleAmPm() {
   currentAmPm = currentAmPm === 'AM' ? 'PM' : 'AM';
@@ -994,13 +1025,6 @@ function updateHoraField() {
   const m = getMinVal();
   document.getElementById('f-hora').value = `${h}:${m} ${currentAmPm}`;
 }
-
-// Init wheels after DOM ready
-setTimeout(() => {
-  getHourVal = initWheel('wheelHour', 8); // default 9
-  getMinVal  = initWheel('wheelMin', 0);  // default 00
-  updateHoraField();
-}, 100);
 
 // ══ INPUTS ══
 function pick(el, key) {
