@@ -328,22 +328,18 @@ body::after{content:'';position:fixed;inset:0;
 .wheel-picker{
   display:flex;align-items:center;gap:2px;
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-  height:150px;overflow:hidden;position:relative;user-select:none;-webkit-user-select:none;}
-.wheel-sep{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold);
-  padding:0 4px;position:relative;z-index:2;}
+  height:48px;overflow:hidden;position:relative;user-select:none;-webkit-user-select:none;}
+.wheel-sep{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);
+  padding:0 2px;position:relative;z-index:2;}
 .wheel-col{flex:1;height:100%;overflow:hidden;position:relative;cursor:grab;}
 .wheel-col:active{cursor:grabbing;}
 .wheel-track{display:flex;flex-direction:column;transition:transform 0.15s cubic-bezier(0.2,0,0,1);}
-.wheel-item{height:50px;display:flex;align-items:center;justify-content:center;
-  font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--muted);
+.wheel-item{height:48px;display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;font-size:14px;color:var(--muted);
   transition:color 0.2s,font-size 0.2s;flex-shrink:0;}
-.wheel-item.selected{color:var(--gold);font-size:30px;}
-.wheel-selector{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
-  height:50px;border-top:1px solid rgba(255,215,0,0.3);border-bottom:1px solid rgba(255,215,0,0.3);
-  pointer-events:none;z-index:3;}
-.wheel-overlay{position:absolute;left:0;right:0;height:50px;pointer-events:none;z-index:2;}
-.wheel-overlay.top{top:0;background:linear-gradient(to bottom,var(--card),transparent);}
-.wheel-overlay.bot{bottom:0;background:linear-gradient(to top,var(--card),transparent);}
+.wheel-item.selected{color:var(--gold);font-size:16px;font-weight:700;}
+.wheel-selector{display:none;}
+.wheel-overlay{display:none;}
 
 /* User badge in nav */
 .nav-user{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;
@@ -466,9 +462,9 @@ body::after{content:'';position:fixed;inset:0;
           </div>
           <div class="wheel-col" id="wheelAmPm" style="flex:0.8;cursor:pointer;" onclick="toggleAmPm()">
             <div class="wheel-track">
-              <div class="wheel-item selected" id="ampmDisplay" data-val="AM" style="color:var(--gold);font-size:26px;height:150px;flex-direction:column;gap:8px">
-                <span id="amVal" style="opacity:1">AM</span>
-                <span id="pmVal" style="opacity:0.25;font-size:18px">PM</span>
+              <div class="wheel-item selected" id="ampmDisplay" data-val="AM" style="height:48px;flex-direction:column;gap:2px">
+                <span id="amVal" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--gold);opacity:1">AM</span>
+                <span id="pmVal" style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);opacity:0.4">PM</span>
               </div>
             </div>
           </div>
@@ -927,13 +923,13 @@ function initWheel(colId, defaultIdx) {
   const col = document.getElementById(colId);
   const track = col.querySelector('.wheel-track');
   const items = track.querySelectorAll('.wheel-item');
-  const itemH = 50;
+  const itemH = 48;
   let current = defaultIdx || 0;
   let startY, startOffset, isDragging = false;
 
   function setIndex(idx) {
     current = Math.max(0, Math.min(items.length - 1, idx));
-    track.style.transform = `translateY(${50 - current * itemH}px)`;
+    track.style.transform = `translateY(${0 - current * itemH}px)`;
     items.forEach((el, i) => el.classList.toggle('selected', i === current));
     updateHoraField();
   }
@@ -983,10 +979,12 @@ let getHourVal, getMinVal, getAmPmVal;
 let currentAmPm = 'AM';
 function toggleAmPm() {
   currentAmPm = currentAmPm === 'AM' ? 'PM' : 'AM';
-  document.getElementById('amVal').style.opacity = currentAmPm === 'AM' ? '1' : '0.25';
-  document.getElementById('pmVal').style.opacity = currentAmPm === 'PM' ? '1' : '0.25';
-  document.getElementById('amVal').style.fontSize = currentAmPm === 'AM' ? '26px' : '18px';
-  document.getElementById('pmVal').style.fontSize = currentAmPm === 'PM' ? '26px' : '18px';
+  const amEl = document.getElementById('amVal');
+  const pmEl = document.getElementById('pmVal');
+  amEl.style.color = currentAmPm === 'AM' ? 'var(--gold)' : 'var(--muted)';
+  amEl.style.opacity = currentAmPm === 'AM' ? '1' : '0.4';
+  pmEl.style.color = currentAmPm === 'PM' ? 'var(--gold)' : 'var(--muted)';
+  pmEl.style.opacity = currentAmPm === 'PM' ? '1' : '0.4';
   updateHoraField();
 }
 
