@@ -413,6 +413,11 @@ body::after{content:'';position:fixed;inset:0;
       <div class="prof-name">MATEO</div>
       <div class="prof-count" id="pc-mateo">— trades</div>
     </div>
+    <div class="prof-card" onclick="selectProfile('jose')">
+      <div class="prof-avatar">👨‍💻</div>
+      <div class="prof-name">JOSE</div>
+      <div class="prof-count" id="pc-jose">— trades</div>
+    </div>
   </div>
 </div>
 
@@ -843,7 +848,8 @@ let currentPhotoBase64 = null;
 const PROFILES = {
   daniel:  { name: 'Daniel',  emoji: '👨‍💼', key: 'gsj_daniel' },
   veronica:{ name: 'Verónica',emoji: '👩‍💼', key: 'gsj_veronica' },
-  mateo:   { name: 'Mateo',   emoji: '🧑‍💼', key: 'gsj_mateo' }
+  mateo:   { name: 'Mateo',   emoji: '🧑‍💼', key: 'gsj_mateo' },
+  jose:    { name: 'Jose',    emoji: '👨‍💻', key: 'gsj_jose' }
 };
 
 function getProfileTrades(pid) {

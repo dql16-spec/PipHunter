@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ph-v1';
+const CACHE_NAME = 'ph-v3';
 const ASSETS = [
   '/index.html',
   '/manifest.json',
